@@ -14,6 +14,8 @@ const ChatContainer = () => {
     selectedUser,
     subscribeToMessages,
     unsubscribeFromMessages,
+    
+    messageTypingUsers,
   } = useChatStore();
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
@@ -22,7 +24,7 @@ const ChatContainer = () => {
     getMessages(selectedUser._id);
 
     subscribeToMessages();
-
+    
     return () => unsubscribeFromMessages();
   }, [selectedUser._id, getMessages, subscribeToMessages, unsubscribeFromMessages]);
 
@@ -84,6 +86,16 @@ const ChatContainer = () => {
         ))}
       </div>
 
+
+        {
+          messageTypingUsers.includes(selectedUser._id) && (
+            <div className="p-2 text-xs text-gray-500">
+              {selectedUser.fullName} is typing...
+            </div>
+          )
+        }
+
+        
       <MessageInput />
     </div>
   );

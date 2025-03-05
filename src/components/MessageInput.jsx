@@ -9,32 +9,17 @@ const MessageInput = () => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
-  const { sendMessage } = useChatStore();
-  const [typingUser, setTypingUser] = useState(""); // Typing indicator
+  const { sendMessage, startTyping,  stopTyping, messageTypingUsers} = useChatStore();
+  const [typingUsers, setTypingUsers] = useState([]); // Track typing users
   const { authUser } = useAuthStore();
   const { selectedUser } = useChatStore();
 
   const socketRef = useRef(null); // Ensure only one socket connection
   const typingTimeoutRef = useRef(null); // Properly handle typing timeout
+  const [isTyping, setIsTyping] = useState(false);
 
-  // Initialize socket connection
-  useEffect(() => {
-    socketRef.current = io("http://localhost:5001"); // Adjust for your backend
-
-    socketRef.current.on("userTyping", ({ userId }) => {
-      if (userId === selectedUser?._id) {
-        setTypingUser(`${selectedUser.fullName} is typing...`);
-      }
-    });
-
-    socketRef.current.on("userStoppedTyping", () => {
-      setTypingUser("");
-    });
-
-    return () => {
-      socketRef.current.disconnect();
-    };
-  }, [selectedUser]); // Ensure selectedUser updates correctly
+  
+  
 
   // Handle image selection
   const handleImageChange = (e) => {
@@ -55,21 +40,27 @@ const MessageInput = () => {
   };
 
   // Handle typing event
-  const handleTyping = (e) => {
-    if (!authUser || !selectedUser) return; // Prevent errors if null
+  // Handle typing event
+const handleTyping = (e) => {
+  if (!authUser || !selectedUser) return; // Prevent errors if null
 
-    setText(e.target.value);
-    socketRef.current.emit("typing", {
-      userId: authUser._id,
-      receiverId: selectedUser._id,
-    });
+  setText(e.target.value);
 
-    // Clear previous timeout and set a new one
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    typingTimeoutRef.current = setTimeout(() => {
-      socketRef.current.emit("stopTyping", { userId: authUser._id });
-    }, 1000);
-  };
+  if (!isTyping) {
+    setIsTyping(true);
+    startTyping(selectedUser._id);
+  }
+
+  // Clear the existing timeout
+  if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+
+  // Set a new timeout to stop typing after 1000ms (1 second)
+  typingTimeoutRef.current = setTimeout(() => {
+    stopTyping(selectedUser._id);
+    setIsTyping(false);
+  }, 20000);
+};
+
 
   // Handle message send
   const handleSendMessage = async (e) => {
@@ -113,7 +104,7 @@ const MessageInput = () => {
         </div>
       )}
 
-      <p className="text-sm text-gray-500">{typingUser}</p> {/* Typing Indicator */}
+      
 
       <form onSubmit={handleSendMessage} className="flex items-center gap-2">
         <div className="flex-1 flex gap-2">
@@ -150,6 +141,8 @@ const MessageInput = () => {
           <Send size={22} />
         </button>
       </form>
+
+      
     </div>
   );
 };
