@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef } from 'react';
 import { useChatStore } from '../store/useChatStore';
 import ChatHeader from '../components/ChatHeader';
 import MessageInput from '../components/MessageInput';
@@ -14,23 +14,22 @@ const ChatContainer = () => {
     selectedUser,
     subscribeToMessages,
     unsubscribeFromMessages,
-    
     messageTypingUsers,
   } = useChatStore();
   const { authUser } = useAuthStore();
-  const messageEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
 
   useEffect(() => {
     getMessages(selectedUser._id);
-
     subscribeToMessages();
     
     return () => unsubscribeFromMessages();
   }, [selectedUser._id, getMessages, subscribeToMessages, unsubscribeFromMessages]);
 
+  // Auto-scroll to the bottom when new messages arrive
   useEffect(() => {
-    if (messageEndRef.current && messages) {
-      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
   }, [messages]);
 
@@ -48,14 +47,14 @@ const ChatContainer = () => {
     <div className="flex-1 flex flex-col overflow-auto">
       <ChatHeader />
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
+      {/* Scrollable container - Reversed message order */}
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 flex flex-col-reverse space-y-4">
+        {[...messages].reverse().map((message) => (
           <div
             key={message._id}
             className={`chat ${message.senderId === authUser._id ? "chat-end" : "chat-start"}`}
-            ref={messageEndRef}
           >
-            <div className=" chat-image avatar">
+            <div className="chat-image avatar">
               <div className="size-10 rounded-full border">
                 <img
                   src={
@@ -86,18 +85,16 @@ const ChatContainer = () => {
         ))}
       </div>
 
+      {/* Typing Indicator */}
+      {messageTypingUsers.includes(selectedUser._id) && (
+        <div className="p-2 text-xs text-gray-500">
+          {selectedUser.fullName} is typing...
+        </div>
+      )}
 
-        {
-          messageTypingUsers.includes(selectedUser._id) && (
-            <div className="p-2 text-xs text-gray-500">
-              {selectedUser.fullName} is typing...
-            </div>
-          )
-        }
-
-        
       <MessageInput />
     </div>
   );
 };
+
 export default ChatContainer;

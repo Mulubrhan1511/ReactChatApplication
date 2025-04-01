@@ -118,4 +118,12 @@ export const useChatStore = create((set, get) => ({
       toast.error(error.response.data.message);
     }
   },
+
+  updateMessageStatus: async (userId) => {
+    try {
+      const res = await axiosInstance.post(`/messages-seen/${messageId}`);
+    } catch (error) {
+      toast.error(error.response.data.message);
+    }
+  },
 }));
