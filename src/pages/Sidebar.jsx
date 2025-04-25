@@ -5,13 +5,14 @@ import SidebarSkeleton from '../components/skeletons/SidebarSkeleton';
 import { Users } from "lucide-react";
 
 const Sidebar = () => {
-  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, messageTypingUsers, getTypingUsers, getStopTypingUsers } = useChatStore();
+  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, messageTypingUsers, getTypingUsers, getStopTypingUsers, messageSeen } = useChatStore();
   const { onlineUsers } = useAuthStore();
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
 
   useEffect(() => {
     getUsers();
     getTypingUsers();
+    messageSeen();
     getStopTypingUsers();
     console.log("messageTypingUsers", messageTypingUsers);
   }, [getUsers]);
@@ -45,47 +46,62 @@ const Sidebar = () => {
       </div>
 
       <div className="overflow-y-auto w-full py-3">
-        {filteredUsers.map((user) => (
-          <button
-            key={user._id}
-            onClick={() => setSelectedUser(user)}
-            className={`
-              w-full p-3 flex items-center gap-3
-              hover:bg-base-300 transition-colors
-              ${selectedUser?._id === user._id ? "bg-base-300 ring-1 ring-base-300" : ""}
-            `}
-          >
-            <div className="relative mx-auto lg:mx-0">
-              <img
-                src={user.profilePic || "/avatar.png"}
-                alt={user.name}
-                className="size-12 object-cover rounded-full"
-              />
-              {onlineUsers.includes(user._id) && (
-                <span className="absolute bottom-0 right-0 size-3 bg-green-500 rounded-full ring-2 ring-zinc-900" />
-              )}
-            </div>
+        {filteredUsers.map((user) => {
+          const isSelected = selectedUser?._id === user._id;
+          const isTyping = messageTypingUsers.includes(user._id);
+          const isOnline = onlineUsers.includes(user._id);
+          const hasLastMessage = !!user.lastMessage;
+          const unreadCount = user.unReadCount || 0;
 
-            {/* User info - only visible on larger screens */}
-            <div className="hidden lg:block text-left min-w-0">
-              <div className="font-medium truncate">{user.fullName}</div>
-              <div className="text-sm text-zinc-400">
-                {messageTypingUsers.includes(user._id) ? (
-                  <span className="text-blue-500 animate-pulse">Typing...</span>
-                ) : onlineUsers.includes(user._id) ? (
-                  "Online"
-                ) : (
-                  "Offline"
+          return (
+            <button
+              key={user._id}
+              onClick={() => setSelectedUser(user)}
+              className={`w-full p-3 flex items-center gap-4 rounded-xl transition-colors
+                ${isSelected ? "bg-base-300 ring-1 ring-base-300" : "hover:bg-base-200"}`}
+            >
+              {/* Profile Picture */}
+              <div className="relative flex-shrink-0">
+                <img
+                  src={user.profilePic || "/avatar.png"}
+                  alt={user.name}
+                  className="w-12 h-12 object-cover rounded-full"
+                />
+                {isOnline && (
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full ring-2 ring-white" />
                 )}
               </div>
-            </div>
-          </button>
-        ))}
 
-        {filteredUsers.length === 0 && (
-          <div className="text-center text-zinc-500 py-4">No online users</div>
-        )}
-      </div>
+              {/* User Info */}
+              <div className="text-left min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium truncate">{user.fullName}</span>
+                  {unreadCount > 0 && (
+                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
+                      {unreadCount}
+                    </span>
+                  )}
+                </div>
+                <div className="text-sm text-zinc-400 truncate">
+                  {isTyping ? (
+                    <span className="text-blue-500 animate-pulse">Typing...</span>
+                  ) : hasLastMessage ? (
+                    user.lastMessage
+                  ) : (
+                    isOnline ? "Online" : "Offline"
+                  )}
+                </div>
+              </div>
+
+                          </button>
+                        );
+                      })}
+
+          {filteredUsers.length === 0 && (
+            <div className="text-center text-zinc-500 py-4">No users found</div>
+          )}
+        </div>
+
     </aside>
   );
 };

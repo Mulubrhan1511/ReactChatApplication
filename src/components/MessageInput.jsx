@@ -58,7 +58,7 @@ const handleTyping = (e) => {
   typingTimeoutRef.current = setTimeout(() => {
     stopTyping(selectedUser._id);
     setIsTyping(false);
-  }, 20000);
+  }, 1000);
 };
 
 
@@ -77,7 +77,7 @@ const handleTyping = (e) => {
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
-      socketRef.current.emit("stopTyping", { userId: authUser._id });
+      stopTyping(selectedUser._id);
     } catch (error) {
       console.error("Failed to send message:", error);
     }

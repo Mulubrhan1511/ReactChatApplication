@@ -60,6 +60,8 @@ export const useChatStore = create((set, get) => ({
       set({
         messages: [...get().messages, newMessage],
       });
+
+      const res = axiosInstance.post(`/messages/messages-seen/${selectedUser._id}`); 
     });
   },
 
@@ -68,7 +70,10 @@ export const useChatStore = create((set, get) => ({
     socket.off("newMessage");
   },
 
-  setSelectedUser: (selectedUser) => set({ selectedUser }),
+  setSelectedUser: (selectedUser) => {
+    set({ selectedUser });
+    const res = axiosInstance.post(`/messages/messages-seen/${selectedUser._id}`);
+  },
 
   getStopTypingUsers: () => {
     const socket = useAuthStore.getState().socket;
@@ -98,6 +103,38 @@ export const useChatStore = create((set, get) => ({
     });
   },
 
+  messageSeen: () => {
+    const socket = useAuthStore.getState().socket;
+  
+    if (!socket) {
+      console.error("Socket not found in store.");
+      return;
+    }
+  
+    socket.off("messages-seen"); // Prevent duplicate listeners
+  
+    socket.on("messages-seen", (data) => {
+      console.log("data in message seen:", data);
+      const selectedUser = get().selectedUser;
+  
+      if (selectedUser && selectedUser._id === data.userId) {
+        const updatedMessages = get().messages.map((msg) => {
+          if (msg.receiverId === data.userId && !msg.is_read) {
+            console.log("Marking as read:", msg);
+            return { ...msg, is_read: true };
+          }
+          return msg;
+        });
+  
+        console.log("updatedMessages", updatedMessages);
+        set({ messages: updatedMessages });
+      }
+    });
+  },
+  
+  
+  
+
   
 
  
@@ -105,7 +142,7 @@ export const useChatStore = create((set, get) => ({
 
   stopTyping: async (userId) => {
     try {
-      const res = await axiosInstance.post(`/messages//stop-typing/${userId}`);
+      const res = await axiosInstance.post(`/messages/stop-typing/${userId}`);
     } catch (error) {
       console.log("error in stop typing:", error);
     }
@@ -114,14 +151,6 @@ export const useChatStore = create((set, get) => ({
   startTyping: async (userId) => {
     try {
       const res = await axiosInstance.post(`/messages/typing/${userId}`);
-    } catch (error) {
-      toast.error(error.response.data.message);
-    }
-  },
-
-  updateMessageStatus: async (userId) => {
-    try {
-      const res = await axiosInstance.post(`/messages-seen/${messageId}`);
     } catch (error) {
       toast.error(error.response.data.message);
     }
