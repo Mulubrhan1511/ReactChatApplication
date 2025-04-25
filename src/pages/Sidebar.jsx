@@ -5,7 +5,7 @@ import SidebarSkeleton from '../components/skeletons/SidebarSkeleton';
 import { Users } from "lucide-react";
 
 const Sidebar = () => {
-  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, messageTypingUsers, getTypingUsers, getStopTypingUsers, messageSeen } = useChatStore();
+  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, messageTypingUsers, getTypingUsers, getStopTypingUsers, messageSeen, subscribeToMessages } = useChatStore();
   const { onlineUsers } = useAuthStore();
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
 
@@ -14,6 +14,7 @@ const Sidebar = () => {
     getTypingUsers();
     messageSeen();
     getStopTypingUsers();
+    subscribeToMessages();
     console.log("messageTypingUsers", messageTypingUsers);
   }, [getUsers]);
 

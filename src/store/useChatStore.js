@@ -47,21 +47,52 @@ export const useChatStore = create((set, get) => ({
   },
 
   subscribeToMessages: () => {
-    const { selectedUser } = get();
-    if (!selectedUser) return;
-
     const socket = useAuthStore.getState().socket;
-
+    socket.off("newMessage");
     socket.on("newMessage", (newMessage) => {
-      console.log("newMessage", newMessage);
-      const isMessageSentFromSelectedUser = newMessage.senderId === selectedUser._id;
-      if (!isMessageSentFromSelectedUser) return;
+      const selectedUser = get().selectedUser;
+      if (selectedUser){
+        const isMessageSentFromSelectedUser = newMessage.senderId === selectedUser._id;
+      if (!isMessageSentFromSelectedUser) {
+        const users = get().users;
+        const updatedUsers = users.map(user => {
+          if (user._id === newMessage.senderId) {
+            return {
+              ...user,
+              unReadCount: user.unReadCount + 1,
+              lastMessage: newMessage.text,
+              lastMessageTime: newMessage.createdAt,
+            };
+          }
+          return user;
+        });
+  
+        set({ users: updatedUsers });
+      }
 
       set({
         messages: [...get().messages, newMessage],
       });
 
       const res = axiosInstance.post(`/messages/messages-seen/${selectedUser._id}`); 
+      }
+      else {
+        const users = get().users;
+        const updatedUsers = users.map(user => {
+          if (user._id === newMessage.senderId) {
+            return {
+              ...user,
+              unReadCount: user.unReadCount + 1,
+              lastMessage: newMessage.text,
+              lastMessageTime: newMessage.createdAt,
+            };
+          }
+          return user;
+        });
+  
+        set({ users: updatedUsers });
+      }
+      
     });
   },
 
@@ -73,6 +104,21 @@ export const useChatStore = create((set, get) => ({
   setSelectedUser: (selectedUser) => {
     set({ selectedUser });
     const res = axiosInstance.post(`/messages/messages-seen/${selectedUser._id}`);
+
+    if (selectedUser) {
+      const users = get().users;
+        const updatedUsers = users.map(user => {
+          if (user._id === selectedUser._id) {
+            return {
+              ...user,
+              unReadCount: 0,
+            };
+          }
+          return user;
+        });
+  
+        set({ users: updatedUsers });
+    }
   },
 
   getStopTypingUsers: () => {
@@ -84,7 +130,6 @@ export const useChatStore = create((set, get) => ({
     }
   
     socket.on("user-stopped-typing", (data) => {
-      console.log("data in user-typing stoped:", data);
       set({ messageTypingUsers: data }); // Update store state
     });
   },
@@ -98,7 +143,6 @@ export const useChatStore = create((set, get) => ({
     }
   
     socket.on("user-typing", (data) => {
-      console.log("data in user-typing:", data);
       set({ messageTypingUsers: data }); // Update store state
     });
   },
@@ -114,19 +158,15 @@ export const useChatStore = create((set, get) => ({
     socket.off("messages-seen"); // Prevent duplicate listeners
   
     socket.on("messages-seen", (data) => {
-      console.log("data in message seen:", data);
       const selectedUser = get().selectedUser;
   
       if (selectedUser && selectedUser._id === data.userId) {
         const updatedMessages = get().messages.map((msg) => {
           if (msg.receiverId === data.userId && !msg.is_read) {
-            console.log("Marking as read:", msg);
             return { ...msg, is_read: true };
           }
           return msg;
         });
-  
-        console.log("updatedMessages", updatedMessages);
         set({ messages: updatedMessages });
       }
     });
