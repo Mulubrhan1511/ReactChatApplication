@@ -5,7 +5,36 @@ import toast from "react-hot-toast";
 import { useChatStore } from "./useChatStore";
 
 // ✅ Wrap TURN config in a function to avoid runtime issues
+function getIceServers() {
+  const username = import.meta.env.VITE_TURN_USERNAME;
+  const credential = import.meta.env.VITE_TURN_CREDENTIAL;
 
+  return {
+    iceServers: [
+      { urls: "stun:turn.cloudflare.com:3478" },
+      {
+        urls: "turn:turn.cloudflare.com:3478?transport=udp",
+        username,
+        credential,
+      },
+      {
+        urls: "turn:turn.cloudflare.com:3478?transport=tcp",
+        username,
+        credential,
+      },
+      {
+        urls: "turns:turn.cloudflare.com:5349?transport=tcp",
+        username,
+        credential,
+      },
+      {
+        urls: "turns:turn.cloudflare.com:443?transport=tcp",
+        username,
+        credential,
+      },
+    ],
+  };
+}
 
 export const useVideoStore = create((set, get) => ({
   localStream: null,
