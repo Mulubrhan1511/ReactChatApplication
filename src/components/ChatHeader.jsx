@@ -1,69 +1,45 @@
-import { Phone, X } from "lucide-react";
+import { X,  Video } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
-import { useCallStore } from "../store/useCallStore";
+import { useVideoStore } from "../store/useVideoStore";
 import { useEffect, useRef, useState } from "react";
+import VideoInterface from "./VideoInterface";
 
 const ChatHeader = () => {
   const { selectedUser, setSelectedUser } = useChatStore();
   const { onlineUsers } = useAuthStore();
-  const { startCall } = useCallStore();
-  const { calluser, setLocalStream, localStream } = useCallStore();
-  const videoRef = useRef(null);
+  const { makeCall, callStatus, endCall } = useVideoStore();
+  const [isVideoCallActive, setIsVideoCallActive] = useState(false);
 
-  
-  const getMediaStream = async (faceMode) => {
-  try {
-    if (localStream) {
-      return localStream; // Return existing stream if available
+  // Listen for call status changes
+  useEffect(() => {
+    if (callStatus === "incoming" || callStatus === "outgoing") {
+      setIsVideoCallActive(true);
+    } else {
+      setIsVideoCallActive(false);
     }
+  }, [callStatus]);
 
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const videoDevices = devices.filter(device => device.kind === 'videoinput');
-    const audioDevices = devices.filter(device => device.kind === 'audioinput');
+  if (!selectedUser) return null; // Prevent errors when no user is selected
 
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: {
-        width: { min: 640, ideal: 1280, max: 1920 },
-        height: { min: 480, ideal: 720, max: 1080 },
-        frameRate: { min: 16, ideal: 30, max: 60 },
-        facingMode: videoDevices.length > 0 ? faceMode : undefined,
-      },
-    });
-    setLocalStream(stream); // Store the stream in state
-    return stream; // ✅ RETURN the new stream
-  } catch (error) {
-    console.error("Error accessing media devices.", error);
-    setLocalStream(null); // Reset local stream on error
-    return null; // Return null if there's an error
-  }
-};
-
-
-  const handleStartCall = async (userId) => {
-    // Logic to start a call with the selected user
-    console.log(`Starting call with user ID: ${userId}`);
-    const stream = await getMediaStream();
-    if (!stream) {
-      console.error("Failed to get media stream.");
+  const handleVideoCall = async () => {
+    if (!onlineUsers.includes(selectedUser._id)) {
+      toast.error("User is offline");
       return;
     }
-
-    
-
-    console.log("Local stream set for call:");
-
-    // Assuming startCall is a function that initiates the call
-    startCall(userId);
-
-  }
-
-  useEffect(() => {
-    if (videoRef.current && localStream) {
-      videoRef.current.srcObject = localStream;
+    try {
+      await makeCall(selectedUser._id);
+      setIsVideoCallActive(true);
+    } catch (error) {
+      console.error("Failed to start call:", error);
+      toast.error("Failed to start call.");
     }
-  }, [localStream]);
+  };
+
+  const handleEndCall = () => {
+    endCall();
+    setIsVideoCallActive(false);
+  };
   
 
   return (
@@ -89,33 +65,45 @@ const ChatHeader = () => {
         </div>
 
       {/* Right Side: Call Button */}
-      <button
-        onClick={() => handleStartCall(selectedUser._id)}
-        className="p-7 rounded-full hover:bg-base-200 transition"
-        title="Start Call"
-      >
-        <Phone className="w-7 h-7 text-primary" />
-      </button>
+      
 </div>
 
-        {/* Close button */}
-        <button onClick={() => setSelectedUser(null)}>
-          <X />
-        </button>
-      </div>
 
-      {/* Show local video preview */}
-      {localStream && (
-        <div className="mt-3">
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            className="rounded-md border border-gray-300 w-64 h-48 object-cover"
-          />
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleVideoCall}
+            disabled={!!callStatus}
+            className={`hover:bg-base-200 p-2 rounded-full transition-colors ${
+              callStatus ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            title="Start video call"
+          >
+            <Video size={25} />
+          </button>
+
+
+          <button
+            onClick={() => setSelectedUser(null)}
+            className="hover:bg-base-200 p-2 rounded-full transition-colors"
+            title="Close chat"
+          >
+            <X size={20} />
+          </button>
         </div>
+
+      </div>
+      {/* Video Interface */}
+      {isVideoCallActive && (
+        <VideoInterface
+          callStatus={callStatus}
+          selectedUser={selectedUser}
+          onClose={handleEndCall}
+          onEndCall={handleEndCall}
+        />
       )}
-    </div>
+      </div>
   );
 };
 export default ChatHeader;

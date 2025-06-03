@@ -89,6 +89,35 @@ export const useCallStore = create((set, get) => ({
         });
     },
 
+    getMediaStream: async (faceMode = "user") => {
+        try {
+            const { localStream } = get();
+            if (localStream) {
+                return localStream; // Return existing stream if available
+            }
+
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+            const audioDevices = devices.filter(device => device.kind === 'audioinput');
+
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: true,
+                video: {
+                    width: { min: 640, ideal: 1280, max: 1920 },
+                    height: { min: 480, ideal: 720, max: 1080 },
+                    frameRate: { min: 16, ideal: 30, max: 60 },
+                    facingMode: videoDevices.length > 0 ? faceMode : undefined,
+                },
+            });
+            set({ localStream: stream }); // Store the stream in state
+            console.log("Local stream set for call:", stream);
+            return stream; // ✅ RETURN the new stream
+        } catch (error) {
+            console.error("Error accessing media devices.", error);
+            set({ localStream: null }); // Reset local stream on error
+            return null; // Return null if there's an error
+        }
+    },
 
 
 
