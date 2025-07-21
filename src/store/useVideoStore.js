@@ -8,22 +8,31 @@ import { useChatStore } from "./useChatStore";
 function getIceServers() {
   return {
     iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
-      {
-        urls: "turn:openrelay.metered.ca:80",
-        username: "openrelayproject",
-        credential: "openrelayproject",
-      },
-      {
-        urls: "turn:openrelay.metered.ca:443",
-        username: "openrelayproject",
-        credential: "openrelayproject",
-      },
-      {
-        urls: "turn:openrelay.metered.ca:443?transport=tcp",
-        username: "openrelayproject",
-        credential: "openrelayproject",
-      },
+      { urls: "stun:turn.cloudflare.com:3478" }, // ✅ Cloudflare STUN (UDP)
+    
+    { // ✅ Cloudflare TURN (UDP)
+      urls: "turn:turn.cloudflare.com:3478?transport=udp",
+      username: "g0553dfdeb0bfb736b04c52d036e3d9caa1a4c7e9bc51f41af4d983337fb1170",
+      credential: "07f391a1b52cb00cf67fdf5e3b7e2dd3fb471bbc918d639ad676464eefc4ffeb"
+    },
+
+    { // ✅ Cloudflare TURN (TCP - Port 3478)
+      urls: "turn:turn.cloudflare.com:3478?transport=tcp",
+      username: "g0553dfdeb0bfb736b04c52d036e3d9caa1a4c7e9bc51f41af4d983337fb1170",
+      credential: "07f391a1b52cb00cf67fdf5e3b7e2dd3fb471bbc918d639ad676464eefc4ffeb"
+    },
+
+    { // ✅ Cloudflare TURN (TLS over TCP - Port 5349)
+      urls: "turns:turn.cloudflare.com:5349?transport=tcp",
+      username: "g0553dfdeb0bfb736b04c52d036e3d9caa1a4c7e9bc51f41af4d983337fb1170",
+      credential: "07f391a1b52cb00cf67fdf5e3b7e2dd3fb471bbc918d639ad676464eefc4ffeb"
+    },
+
+    { // ✅ Cloudflare TURN (TLS over TCP - Port 443 for firewall bypass)
+      urls: "turns:turn.cloudflare.com:443?transport=tcp",
+      username: "g0553dfdeb0bfb736b04c52d036e3d9caa1a4c7e9bc51f41af4d983337fb1170",
+      credential: "07f391a1b52cb00cf67fdf5e3b7e2dd3fb471bbc918d639ad676464eefc4ffeb"
+    }
     ],
   };
 }
